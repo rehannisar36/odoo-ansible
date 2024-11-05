@@ -1,0 +1,23 @@
+---
+- name: Provisioning all hosts
+  hosts: all
+  become: true
+  become_user: vagrant
+
+  pre_tasks:
+    - name: Ensure vagrant user is in sudo group
+      ansible.builtin.user:
+        name: vagrant
+        groups: sudo
+        append: true
+        state: present
+
+    - name: Install python and python-pip
+      ansible.builtin.apt:
+        name: "{{ item }}"
+        state: present
+        update_cache: true
+      with_items:
+        - python3
+        - python-pip
+      become: true
