@@ -12,12 +12,65 @@
         append: true
         state: present
 
-    - name: Install python and python-pip
+    - name: Install required packages
+      become: true
+      become_user: root
       ansible.builtin.apt:
         name: "{{ item }}"
         state: present
         update_cache: true
       with_items:
         - python3
-        - python-pip
+        - python3-pip
+        - git
+        - postgresql
+        - postgresql-client
+        - nodejs
+        - npm
+        - wkhtmltopdf
+
+    - name: Install rtlcss globally using npm
       become: true
+      become_user: root
+      community.general.npm:
+        name: rtlcss
+        global: true
+        state: present
+
+    - name: Copy SSH key to the target machine
+      ansible.builtin.copy:
+        src: '~/.ssh/id_rsa'
+        dest: '/home/vagrant/.ssh/id_rsa'
+        mode: '0600'
+        owner: vagrant
+        group: vagrant
+
+  tasks:
+
+    - name: Clone Odoo repository
+      ansible.builtin.git:
+        repo: 'git@github.com:odoo/odoo.git'
+        dest: '/home/vagrant/odoo'
+        version: '18.0'
+        key_file: '/home/vagrant/.ssh/id_rsa'
+
+    - name: Create PostgreSQL user for Odoo
+      become: true
+      become_user: postgres
+      ansible.builtin.command: >
+        createuser -d -R -S {{ ansible_user }}
+      args:
+        creates: /var/lib/postgresql/data/{{ ansible_user }}
+
+    - name: Create PostgreSQL database for Odoo user
+      become: true
+      become_user: postgres
+      ansible.builtin.command: >
+        createdb {{ ansible_user }}
+      args:
+        creates: /var/lib/postgresql/data/{{ ansible_user }}
+
+    - name: Run Odoo server
+      ansible.builtin.command: python3 odoo-bin -d {{ ansible_user }} -i base
+      args:
+        chdir: /home/vagrant/odoo
