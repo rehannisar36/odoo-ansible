@@ -1,0 +1,50 @@
+Steps to install odoo 
+
+sudo apt update
+sudo apt install git
+
+Setup key with:
+
+sudo apt install curl ca-certificates gnupg
+curl https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/apt.postgresql.org.gpg >/dev/null
+
+Setup repository with:
+
+sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ jammy-pgdg main" >> /etc/apt/sources.list.d/postgresql.list'
+
+sudo -i -u postgres
+
+
+sudo nano /etc/postgresql/17/main/postgresql.conf
+
+set listen_addresses to localhost
+
+## alter postgres user password. 
+
+CREATE ROLE admin_user WITH LOGIN PASSWORD 'securepassword';
+ALTER ROLE admin_user WITH SUPERUSER;
+createuser --createdb --no-createrole --no-superuser --pwprompt odoo_user
+GRANT ALL PRIVILEGES ON DATABASE odoo_db TO odoo_user;
+
+python3 --version
+pip3 --version
+sudo apt install postgresql postgresql-client
+sudo apt install npm wkhtmltopdf
+sudo npm install -g rtlcss
+
+cd odoo #CommunityPath
+ sudo ./setup/debinstall.sh
+
+  cd /CommunityPath
+ python3 odoo-bin -d odoo_db --db_user odoo_user --db_password=12345
+
+ touch ~/.odoorc and paste 
+ 
+ [options]
+db_host = localhost
+db_user = odoo_user
+db_password = 12345
+db_name = odoo_db
+
+now just python3 odoo-bin
+

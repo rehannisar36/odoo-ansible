@@ -1,0 +1,215 @@
+---
+- name: Set production ready odoo server
+  hosts: all
+
+  vars:
+    ssh_user: "butler"
+    sudo_user: "erp_admin"
+    system_user: "erp"
+    postgres_admin_user: "erp_admin"
+    postgres_odoo_user: "erp"
+    postgres_db: "erp_db"
+    odoo_version: "18.0"
+    odoo_install_dir: "/opt/odoo"
+    odoo_conf_dir: "/etc/odoo"
+    odoo_log_dir: "/var/log/odoo"
+    odoo_addons_dir: "/opt/odoo/addons"
+    postgres_version: "17"
+
+    postgres_odoo_password: "odoo12345"
+    postgres_admin_password: "admin12345"
+    ssl_cert_path: "/etc/nginx/ssl/odoo.crt"
+    ssl_key_path: "/etc/nginx/ssl/odoo.key"
+
+  pre_tasks:
+        
+    # - name: Add SSH user to ssh allowed users
+    #   become: true
+    #   ansible.builtin.lineinfile:
+    #     path: /etc/ssh/sshd_config
+    #     line: "AllowUsers {{ssh_user}}"
+    #     state: present
+    #   notify: Reload SSH service
+    
+    # - name: Ensure SSH user can switch to erp and erp_admin users and restart odoo services
+    #   become: true
+    #   ansible.builtin.lineinfile:
+    #     line: |
+    #       {{ssh_user}} ALL=(erp) NOPASSWD: ALL
+    #       {{ssh_user}} ALL=(erp_admin) NOPASSWD: ALL
+    #       {{ssh_user}} ALL=NOPASSWD: /bin/systemctl restart odoo
+    #     path: "/etc/sudoers.d/{{ssh_user}}"
+    #     create: true
+    #     mode: '0440'
+    #     owner: root
+    #     group: root
+
+    # - name: Create Sudo user
+    #   become: true
+    #   ansible.builtin.user:
+    #     name: "{{sudo_user}}"
+    #     shell: /bin/bash
+    #     groups: sudo
+    #     append: true
+    #     state: present
+
+    # - name: Deny Sudo user to ssh
+    #   become: true
+    #   ansible.builtin.lineinfile:
+    #     line: "DenyUsers {{sudo_user}}"
+    #     path: /etc/ssh/sshd_config
+    #   notify: Reload SSH service    
+
+    # - name: Create system user
+    #   become: true
+    #   ansible.builtin.user:
+    #     name: "{{system_user}}"
+    #     shell: /usr/sbin/nologin
+    #     system: true
+    #     state: present
+
+    # - name: Install required packages
+    #   become: true
+    #   ansible.builtin.apt:
+    #     name: "{{ item }}"
+    #     state: present
+    #     update_cache: true
+    #   with_items:
+    #     - python3
+    #     - python3-pip
+    #     - curl
+    #     - ca-certificates
+    #     - git
+    #     - npm
+    #     - postgresql-common
+    #     - libpq-dev
+
+    # - name: Install psycopg2 using python3-pip
+    #   become: true
+    #   ansible.builtin.pip:
+    #     name: psycopg2
+    #     executable: pip3
+    #     state: present
+
+    - name: Ensure directory for PostgreSQL key exists
+      ansible.builtin.file:
+        path: /usr/share/postgresql-common/pgdg
+        state: directory
+        mode: '0755'
+
+    - name: Download PostgreSQL GPG key
+      become: true
+      ansible.builtin.get_url:
+        url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+        dest: /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
+        mode: '0644'
+
+    - name: Add PostgreSQL APT repository
+      become: true
+      ansible.builtin.apt_repository:
+        repo: "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt {{ ansible_distribution_release }}-pgdg main"
+        state: present
+        filename: pgdg
+
+    - name: Install PostgreSQL packages
+      become: true
+      ansible.builtin.apt:
+        name: "{{ item }}"
+        state: present
+        update_cache: true
+      with_items:
+      - postgresql-{{ postgres_version }}
+      - postgresql-client-{{ postgres_version }}
+      
+    # - name: Install rtlcss globally using npm
+    #   become: true
+    #   become_user: root
+    #   community.general.npm:
+    #     name: rtlcss
+    #     global: true
+    #     state: present
+
+  tasks:
+    - name: Create postgres admin user
+      community.postgresql.postgresql_user:
+        name: "{{ postgres_admin_user }}"
+        password: "{{ postgres_admin_password }}"
+        role_attr_flags: "SUPERUSER,CREATEDB"
+        state: present
+        login_user: postgres
+      become_user: postgres
+      become: true
+
+    - name: Create postgres user for odoo
+      become: true
+      become_user: postgres
+      community.postgresql.postgresql_user:
+        name: "{{ postgres_odoo_user }}"
+        password: "{{ postgres_odoo_password }}"
+        role_attr_flags: "CREATEDB,NOSUPERUSER,NOCREATEROLE"
+        state: present
+
+    - name: Create postgres database for odoo
+      become: true
+      become_user: postgres
+      community.postgresql.postgresql_db:
+        name: "{{ postgres_db }}"
+        login_host: localhost
+        login_user: "{{ postgres_odoo_user }}"
+        owner: "{{ postgres_odoo_user }}"
+        login_password: "{{ postgres_odoo_password }}"
+        state: present
+
+    - name: Clone Odoo repository
+      ansible.builtin.git:
+        repo: 'https://github.com/odoo/odoo.git'
+        dest: '{{ odoo_install_dir }}'
+        version: '{{ odoo_version }}'
+        depth: 1
+        single_branch: true
+        update: no
+      become: true
+
+    - name: Run Odoo setup script
+      ansible.builtin.command:
+        cmd: ./setup/debinstall.sh
+        chdir: '{{ odoo_install_dir }}'
+      become: true
+      args:
+        creates: '{{ odoo_install_dir }}/.odoo_setup_done'
+
+    - name: Create a marker file to indicate Odoo setup is done
+      ansible.builtin.file:
+        path: '{{ odoo_install_dir }}/.odoo_setup_done'
+        state: touch
+        mode: '0644'
+      become: true  
+  
+    - name: Check if Odoo server is already running
+      ansible.builtin.stat:
+        path: "{{ odoo_install_dir }}/.odoo_server_running"
+      register: odoo_server_running
+
+    - name: Run Odoo server
+      become: true
+      become_user: "{{ postgres_odoo_user }}"
+      ansible.builtin.command:
+        cmd: python3 odoo-bin -d {{ postgres_db }} --db_user={{ postgres_odoo_user }} -i base
+        chdir: "{{ odoo_install_dir }}"
+        creates: "{{odoo_install_dir}}/.odoo_server_running"
+
+    - name: Create a marker file to indicate Odoo server is running
+      ansible.builtin.file:
+        path: "{{odoo_install_dir}}/.odoo_server_running"
+        state: touch
+        mode: '0644'
+        owner: "{{odoo_user}}"
+      when: ansible_facts['ansible_os_family'] == 'Debian'
+
+  handlers:
+
+    - name: Reload SSH service
+      become: true
+      ansible.builtin.service:
+        name: ssh
+        state: reloaded
