@@ -1,0 +1,7 @@
+---
+nginx_key_url: https://nginx.org/keys/nginx_signing.key
+nginx_key_dest: /usr/share/keyrings/nginx-archive-keyring.gpg
+nginx_key_tmp: /tmp/nginx_signing.key
+nginx_repo_url_stable: "http://nginx.org/packages/ubuntu {{ ansible_distribution_release | lower }} nginx"
+nginx_pref_file: /etc/apt/preferences.d/99nginx
+odoo_domain: "localhost"

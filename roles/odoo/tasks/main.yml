@@ -1,2 +1,26 @@
 ---
-# tasks file for odoo
+- name: Clone Odoo repository
+  ansible.builtin.git:
+    repo: 'https://github.com/odoo/odoo.git'
+    dest: '{{ odoo_install_dir }}'
+    version: '{{ odoo_version }}'
+    depth: 1
+    single_branch: true
+    update: false
+  become: true
+
+# - name: Run Odoo setup script
+#   ansible.builtin.command:
+#     cmd: ./setup/debinstall.sh
+#     chdir: '{{ odoo_install_dir }}'
+#   become: true
+#   args:
+#     creates: '{{ odoo_install_dir }}/.odoo_setup_done'
+
+# - name: Create a marker file to indicate Odoo setup is done
+#   ansible.builtin.file:
+#     path: '{{ odoo_install_dir }}/.odoo_setup_done'
+#     state: touch
+#     mode: '0644'
+#   become: true
+

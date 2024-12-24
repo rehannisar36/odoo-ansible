@@ -3,21 +3,21 @@
   hosts: all
 
   vars:
-    ssh_user: "butler"
-    sudo_user: "erp_admin"
-    system_user: "erp"
-    postgres_admin_user: "erp_admin"
-    postgres_odoo_user: "erp"
-    postgres_db: "erp_db"
+    # ssh_user: "butler"
+    # sudo_user: "erp_admin"
+    # system_user: "erp"
+    # postgres_admin_user: "erp_admin"
+    # postgres_odoo_user: "erp"
+    # postgres_db: "erp_db"
     odoo_version: "18.0"
     odoo_install_dir: "/opt/odoo"
     odoo_conf_dir: "/etc/odoo"
     odoo_log_dir: "/var/log/odoo"
     odoo_addons_dir: "/opt/odoo/addons"
-    postgres_version: "17"
+    # postgres_version: "17"
 
-    postgres_odoo_password: "odoo12345"
-    postgres_admin_password: "admin12345"
+    # postgres_odoo_password: "odoo12345"
+    # postgres_admin_password: "admin12345"
     ssl_cert_path: "/etc/nginx/ssl/odoo.crt"
     ssl_key_path: "/etc/nginx/ssl/odoo.key"
 
@@ -91,35 +91,35 @@
     #     executable: pip3
     #     state: present
 
-    - name: Ensure directory for PostgreSQL key exists
-      ansible.builtin.file:
-        path: /usr/share/postgresql-common/pgdg
-        state: directory
-        mode: '0755'
+    # - name: Ensure directory for PostgreSQL key exists
+    #   ansible.builtin.file:
+    #     path: /usr/share/postgresql-common/pgdg
+    #     state: directory
+    #     mode: '0755'
 
-    - name: Download PostgreSQL GPG key
-      become: true
-      ansible.builtin.get_url:
-        url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
-        dest: /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
-        mode: '0644'
+    # - name: Download PostgreSQL GPG key
+    #   become: true
+    #   ansible.builtin.get_url:
+    #     url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+    #     dest: /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
+    #     mode: '0644'
 
-    - name: Add PostgreSQL APT repository
-      become: true
-      ansible.builtin.apt_repository:
-        repo: "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt {{ ansible_distribution_release }}-pgdg main"
-        state: present
-        filename: pgdg
+    # - name: Add PostgreSQL APT repository
+    #   become: true
+    #   ansible.builtin.apt_repository:
+    #     repo: "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt {{ ansible_distribution_release }}-pgdg main"
+    #     state: present
+    #     filename: pgdg
 
-    - name: Install PostgreSQL packages
-      become: true
-      ansible.builtin.apt:
-        name: "{{ item }}"
-        state: present
-        update_cache: true
-      with_items:
-      - postgresql-{{ postgres_version }}
-      - postgresql-client-{{ postgres_version }}
+    # - name: Install PostgreSQL packages
+    #   become: true
+    #   ansible.builtin.apt:
+    #     name: "{{ item }}"
+    #     state: present
+    #     update_cache: true
+    #   with_items:
+    #   - postgresql-{{ postgres_version }}
+    #   - postgresql-client-{{ postgres_version }}
       
     # - name: Install rtlcss globally using npm
     #   become: true
@@ -130,35 +130,35 @@
     #     state: present
 
   tasks:
-    - name: Create postgres admin user
-      community.postgresql.postgresql_user:
-        name: "{{ postgres_admin_user }}"
-        password: "{{ postgres_admin_password }}"
-        role_attr_flags: "SUPERUSER,CREATEDB"
-        state: present
-        login_user: postgres
-      become_user: postgres
-      become: true
+    # - name: Create postgres admin user
+    #   community.postgresql.postgresql_user:
+    #     name: "{{ postgres_admin_user }}"
+    #     password: "{{ postgres_admin_password }}"
+    #     role_attr_flags: "SUPERUSER,CREATEDB"
+    #     state: present
+    #     login_user: postgres
+    #   become_user: postgres
+    #   become: true
 
-    - name: Create postgres user for odoo
-      become: true
-      become_user: postgres
-      community.postgresql.postgresql_user:
-        name: "{{ postgres_odoo_user }}"
-        password: "{{ postgres_odoo_password }}"
-        role_attr_flags: "CREATEDB,NOSUPERUSER,NOCREATEROLE"
-        state: present
+    # - name: Create postgres user for odoo
+    #   become: true
+    #   become_user: postgres
+    #   community.postgresql.postgresql_user:
+    #     name: "{{ postgres_odoo_user }}"
+    #     password: "{{ postgres_odoo_password }}"
+    #     role_attr_flags: "CREATEDB,NOSUPERUSER,NOCREATEROLE"
+    #     state: present
 
-    - name: Create postgres database for odoo
-      become: true
-      become_user: postgres
-      community.postgresql.postgresql_db:
-        name: "{{ postgres_db }}"
-        login_host: localhost
-        login_user: "{{ postgres_odoo_user }}"
-        owner: "{{ postgres_odoo_user }}"
-        login_password: "{{ postgres_odoo_password }}"
-        state: present
+    # - name: Create postgres database for odoo
+    #   become: true
+    #   become_user: postgres
+    #   community.postgresql.postgresql_db:
+    #     name: "{{ postgres_db }}"
+    #     login_host: localhost
+    #     login_user: "{{ postgres_odoo_user }}"
+    #     owner: "{{ postgres_odoo_user }}"
+    #     login_password: "{{ postgres_odoo_password }}"
+    #     state: present
 
     - name: Clone Odoo repository
       ansible.builtin.git:

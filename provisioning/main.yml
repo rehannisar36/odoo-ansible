@@ -1,9 +1,11 @@
----
 - name: Set up production-ready Odoo server
   hosts: all
   become: true
+  vars:
+    odoo_domain: 192.168.56.10
   roles:
-    - role: common
     - role: users
-    # - role: postgresql
-    # - role: odoo
+    - role: common
+    - role: postgresql
+    - role: odoo
+    - role: nginx
