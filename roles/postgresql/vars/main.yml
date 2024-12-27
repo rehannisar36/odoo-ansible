@@ -1,7 +1,0 @@
----
-postgresql_admin_user: "erp_admin"
-postgresql_db: "erp_db"
-postgresql_version: "17"
-postgresql_odoo_password: "odoo12345"
-postgresql_admin_password: "admin12345"
-postgresql_odoo_user: "erp"

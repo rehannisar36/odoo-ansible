@@ -6,14 +6,17 @@
     mode: '0755'
 
 - name: Download PostgreSQL GPG key
-  become: true
   ansible.builtin.get_url:
     url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
     dest: /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
     mode: '0644'
 
+- name: Add PostgreSQL GPG key
+  ansible.builtin.apt_key:
+    url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+    state: present
+
 - name: Add PostgreSQL APT repository
-  become: true
   ansible.builtin.apt_repository:
     repo: >
       deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc]
@@ -23,7 +26,6 @@
     filename: pgdg
 
 - name: Install PostgreSQL packages
-  become: true
   ansible.builtin.apt:
     name: "{{ item }}"
     state: present
@@ -43,21 +45,30 @@
   become: true
 
 - name: Create postgres user for odoo
-  become: true
   become_user: postgres
+  become: true
   community.postgresql.postgresql_user:
     name: "{{ postgresql_odoo_user }}"
     password: "{{ postgresql_odoo_password }}"
-    role_attr_flags: "CREATEDB,NOSUPERUSER,NOCREATEROLE"
+    role_attr_flags: "NOSUPERUSER,NOCREATEROLE"
     state: present
 
-- name: Create postgres database for odoo
-  become: true
+- name: Create postgres database for odoo using admin user
   become_user: postgres
+  become: true
   community.postgresql.postgresql_db:
     name: "{{ postgresql_db }}"
-    login_host: localhost
-    login_user: "{{ postgresql_odoo_user }}"
-    owner: "{{ postgresql_odoo_user }}"
-    login_password: "{{ postgresql_odoo_password }}"
     state: present
+
+- name: Assign the database to odoo user
+  become_user: postgres
+  become: true
+  community.postgresql.postgresql_db:
+    name: "{{ postgresql_db }}"
+    owner: "{{ postgresql_odoo_user }}"
+    login_user: "{{ postgresql_odoo_user }}"
+    login_password: "{{ postgresql_odoo_password }}"
+    login_host: localhost
+    state: present
+  notify:
+    - Restart postgresql

@@ -1,7 +1,0 @@
----
-ssh_user: "butler"
-sudo_user: "erp_admin"
-system_user: "erp"
-ssh_user_password: "butler12345"
-sudo_user_password: "erp_admin12345"
-erp_group: "erp_group"
