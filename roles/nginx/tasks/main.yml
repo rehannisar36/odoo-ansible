@@ -4,6 +4,7 @@
     url: "{{ nginx_key_url }}"
     dest: "{{ nginx_key_tmp }}"
     mode: '0644'
+  retries: 5
 
 - name: Convert Nginx key to binary format
   ansible.builtin.command:

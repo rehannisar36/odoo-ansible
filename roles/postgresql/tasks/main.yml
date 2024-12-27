@@ -4,6 +4,7 @@
     path: /usr/share/postgresql-common/pgdg
     state: directory
     mode: '0755'
+  retries: 5
 
 - name: Download PostgreSQL GPG key
   ansible.builtin.get_url:
@@ -66,9 +67,6 @@
   community.postgresql.postgresql_db:
     name: "{{ postgresql_db }}"
     owner: "{{ postgresql_odoo_user }}"
-    login_user: "{{ postgresql_odoo_user }}"
-    login_password: "{{ postgresql_odoo_password }}"
-    login_host: localhost
     state: present
   notify:
     - Restart postgresql
