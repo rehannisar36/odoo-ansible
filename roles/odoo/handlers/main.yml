@@ -1,2 +1,10 @@
 ---
-# handlers file for odoo
+- name: Reload systemd
+  ansible.builtin.service:
+    name: systemd
+    state: reloaded
+
+- name: Restart odoo
+  ansible.builtin.service:
+    name: odoo
+    state: restarted

@@ -13,6 +13,9 @@
     - npm
     - postgresql-common
     - libpq-dev
+    - gnupg2
+    - lsb-release
+    - ubuntu-keyring
 
 - name: Install psycopg2 using python3-pip
   ansible.builtin.pip:

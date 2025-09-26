@@ -80,7 +80,7 @@ Vagrant.configure("2") do |config|
 
   config.vm.provision "ansible" do |ansible|
     ansible.playbook = "provisioning/main.yml"
-    ansible.verbose = "vv"
+    # ansible.verbose = "vvv"
     ansible.ask_vault_pass = true
   end
 end
